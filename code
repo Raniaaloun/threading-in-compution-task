@@ -1,0 +1,74 @@
+#include<pthread.h>
+#include<stdio.h>
+#include<stdlib.h>
+
+int sum=0;
+int updated_counter = 1; 
+void *runner(int *v); //the thread
+pthread_mutex_t lock; 
+
+int main(int argc, char *argv[])
+{
+	if (pthread_mutex_init(&lock, NULL) != 0){
+    
+        printf("\n mutex init failed\n");
+        return 1;
+                                                 }
+
+	if(argc != 3){  
+		printf("Usage: file.o <integer value>\n");
+		return -1;
+		    }
+
+	if(atoi(argv[1])<0){
+			    printf("Usage: file.o <integer value>\n");
+			    return -1;
+			   }
+
+	if(atoi(argv[2])<0){   //to make sure that the number of threads makes sense 	 	         
+			    printf("Number of entered threads is invalid\n");        			 
+			    return -1; 									 
+			   }
+	
+	int value=atoi(argv[1]);
+	int Number_of_threads = atoi(argv[2]);
+	int Chunk_size = value/Number_of_threads;
+	int Number_of_tasks = value / 2;
+	if (value % 2 != 0)
+	Number_of_tasks++;
+	pthread_t tids[Number_of_threads];
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	
+	if (Number_of_tasks < Number_of_threads)
+	printf("Number of tasks for the value you entered is less than number of threads.\n");
+	for(int i=0; i<Number_of_threads -1; i++) {
+		pthread_create(&tids[i],&attr,&runner, Chunk_size);//Create the thread
+		//pthread_join(tids[i],NULL);
+						  }
+	for(int i=0; i<Number_of_threads-1; i++) {
+		pthread_join(tids[i],NULL);
+					       }
+	Chunk_size = value - (updated_counter -1); 
+	pthread_create(&tids[Number_of_threads],&attr,&runner, Chunk_size);
+	pthread_join(tids[Number_of_threads],NULL);
+	
+	pthread_mutex_destroy(&lock);
+	printf("sum=%d\n",sum);	
+				 
+}
+
+void *runner(int *v)
+{
+	pthread_mutex_lock(&lock);
+
+	int i,upper=v;
+	for(i=0;i<upper;i++){
+		sum = sum + updated_counter;
+		updated_counter = updated_counter + 1;
+		            }
+	pthread_mutex_unlock(&lock);
+	pthread_exit(0);
+	return NULL;
+} 
